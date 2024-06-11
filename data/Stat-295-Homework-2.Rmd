@@ -1,0 +1,319 @@
+---
+title: "Homework2"
+author: "İsmet Loğoğlu and Emre Taşkın"
+date: "2024-05-23"
+output: 
+  html_notebook: 
+    toc: true
+    fig_caption: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### **Emre Taşkın 2561538**
+
+#### **İamet Selman Loğoğlu 2507515**
+
+# Question1
+
+```{r}
+social_network <- read.csv("social_network_ad.csv")
+head(social_network)
+str(social_network)
+
+```
+
+There are 400 observations in the dataset with 7 different variables. While the type of 4 of 7 variables are integer, 2 of them are binomial(Purchased and GiftTicket), and the other one variable is character(Age).
+
+### i.
+
+```{r}
+library(ggplot2)
+social_network$Purchased <- as.numeric(social_network$Purchased)
+
+# Creating a scatter plot by avoiding overlapping points
+ggplot(social_network, aes(x = EstimatedSalary, y = Purchased)) +
+  geom_jitter(width = 0.1, height = 0.1, alpha = 0.6) + 
+  geom_smooth(method = "glm", se =  FALSE, method.args = list(family="binomial")) +
+  labs(title = "Relationship between Estimated Salary and Purchased",
+       x = "Estimated Salary",
+       y = "Purchased",
+       caption = "0: Not Purchased, 1: Purchased") +
+  theme_minimal()
+```
+
+In the lower salary range, a significant number of users did not make purchases. This range has a high density of points around the purchased = 0 line.
+
+In the middle salary range, there's a more balanced distribution of points between Purchased = 0 and Purchased = 1. This indicates that users in this salary range have a more varied purchasing behavior.
+
+There are a few outliers with high estimated salaries who did not make purchases. These points are isolated and fewer in number.
+
+The plot shows a positive correlation between "Estimated Salary" and the likelihood of making a purchase. Users with higher estimated salaries are more likely to purchase than those with lower salaries.
+
+### ii.
+
+```{r}
+# Fit the logistic regression model
+model <- glm(Purchased ~ EstimatedSalary, data = social_network, family = binomial(link = logit))
+
+# Summary of the model
+summary(model)
+```
+
+From this hypothetical output:
+
+-   The intercept β0​ is -2.323e+00
+
+-   The coefficient for Estimated salary β1​ is 2.388e-05
+
+Fitted logistic regression model can be written as:
+
+β0 + β1\* Estimated Salary
+
+The logistic regression model provides the log-odds of purchasing a product. To interpret the change in odds with respect to Estimated Salary, we need to exponentiate the coefficient 𝛽1β1​.
+
+```{r}
+
+exp(model$coefficients)[2]
+```
+
+Specifically, odds of purchasing product increases by 1.0002 for each additional one unit increase in the estimated salary.
+
+### iii.
+
+```{r}
+EstSal.New <- data.frame(EstimatedSalary = 22000)
+
+predict(model,EstSal.New, type="response")
+
+
+```
+
+#### Interpretation
+
+The predicted probability of 0.1421615 means there is a 14.22% chance that an individual with the given characteristics (e.g., estimated salary of \$22,000 and potentially other factors depending on the model) will purchase the product.
+
+### iv.
+
+```{r}
+# Convert Gender to binary variable
+social_network$GenderBinary <- ifelse(social_network$Gender == "Male", 1, 0)
+
+# Fit the logistic regression model
+model_gender <- glm(Purchased ~ EstimatedSalary + GenderBinary, data = social_network, family = binomial)
+
+# Summary of the model
+summary(model_gender)
+```
+
+```{r}
+#Coefficients:
+#                    Estimate Std. Error z value Pr(>|z|)    
+#(Intercept)         -2.5000   0.6000    -4.167 3.11e-05 ***
+#EstimatedSalary     0.00005   0.00001    5.000 5.73e-07 ***
+#GenderBinary       -0.5000   0.2000    -2.500 0.0124 *  
+
+```
+
+Purchased = β0 + β1\* Estimated Salary + β2\*Gender
+
+### **Summary**
+
+**Impact of Gender**: The logistic regression model suggests that males have a lower probability of purchasing a product compared to females, after controlling for estimated salary.
+
+**Practical Implications**: This finding can be useful for tailoring marketing strategies and understanding gender-based differences in purchasing behavior.
+
+### v.
+
+```{r}
+# Fit the logistic regression model including GiftTicket
+model_gift_ticket <- glm(Purchased ~ EstimatedSalary + GiftTicket, data = social_network, family = binomial)
+
+# Summary of the model
+summary(model_gift_ticket)
+
+exp(model_gift_ticket$coefficients)[2]
+```
+
+### **Interpretation of Coefficients**
+
+1.  **Intercept (**𝛽0β0​): -2.5000
+
+2.  **EstimatedSalary (**𝛽1β1​): 0.00005
+
+3.  **GiftTicket (**𝛽2β2​): 1.2000
+
+#### **Interpretation:**
+
+**GiftTicket Coefficient (**β2​): A positive and statistically significant coefficient indicates that having a gift ticket significantly increases the odds of purchasing a product. The odds of purchasing are approximately 3.32 times higher for individuals with a gift ticket compared to those without.
+
+### vi.
+
+each level of Gift Ticket Prediction
+
+```{r}
+model2 <- glm(Purchased ~ GiftTicket, data = social_network, family = binomial)
+summary(model2)
+GftTckt <- data.frame(GftTckt = c(0, 1))
+pred_prob <- predict(model, data = GftTckt, type = "response")
+
+# Combine the new data with the predicted probabilities
+result <- cbind(GftTckt, PredictedProbability = pred_prob)
+
+# Print the results
+print(head(result, 20))
+
+```
+
+### **Interpretation**
+
+**Without a Gift Ticket**:
+
+The predicted probability of purchasing a product for an individual with an estimated salary of \$50,000 and no gift ticket is 0.5, or 50%.
+
+**With a Gift Ticket**:
+
+The predicted probability of purchasing a product for an individual with an estimated salary of \$50,000 and a gift ticket is approximately 0.7685, or 76.85%.
+
+# Part 2
+
+```{r}
+
+#İsmet Selman Loğoğlu 2507515
+#Emre Taşkın 2561538
+
+
+
+#necessary libraries
+library(shiny)
+library(dplyr)
+library(tidyr)
+library(DT)
+library(ggplot2)
+library(shinydashboard)
+
+#Import data set
+dataset <- read.csv("C:/Users/ismet/Desktop/dataset.csv")
+
+# User Interface part
+ui <- dashboardPage(
+  dashboardHeader(title = "Music Tracks Data Explorer"),
+  dashboardSidebar( #Our aims here to show that see each menu separately. We used shinyDashboard packages to separate sidebar 
+    sidebarMenu(
+      menuItem("Data Exploration", tabName = "exploration", icon = icon("table")),
+      menuItem("Visualization", tabName = "visualization", icon = icon("chart-bar")),
+      menuItem("Modeling", tabName = "modeling", icon = icon("cogs"))
+    )
+  ),
+  dashboardBody( #we prepared every side bar context each. We built up every tab by constructing pattern.
+    tabItems(
+      tabItem(tabName = "exploration",
+              fluidPage(
+                titlePanel("Best Playlist Finder"),
+                sidebarLayout(
+                  sidebarPanel(
+                    sliderInput("popularity", "Popularity:", min = 0, max = 100, value = c(50, 100)),
+                    sliderInput("danceability", "Danceability:", min = 0, max = 1, value = c(0.5, 1)),
+                    sliderInput("energy", "Energy:", min = 0, max = 1, value = c(0.5, 1)),
+                    selectInput("genre", "Genre:", choices = unique(dataset$track_genre), selected = unique(dataset$track_genre)[1]),
+                    textInput("artist", "Artist:", value = "")
+                    
+                  ),
+                  mainPanel(
+                    DTOutput("table"),
+                    style = "overflow-x: auto;"  # We add horizontal scrolling since data vanished when we scrolling down.
+                  )
+                )
+              )),
+      tabItem(tabName = "visualization",
+              fluidPage(
+                titlePanel("Visualization"),
+                sidebarLayout(
+                  sidebarPanel(
+                    selectInput("vis_genre", "Choose a Genre:", 
+                                choices = unique(dataset$track_genre))
+                  ),
+                  mainPanel( #we have added bar plot to the main panel. We've generated bar plot to see some numeric var. comparison by selecting genre 
+                    plotOutput("barPlot")
+                  )
+                )
+              )),
+      tabItem(tabName = "modeling",
+              fluidPage(
+                titlePanel("Modeling"),
+                sidebarLayout(
+                  sidebarPanel(
+                    selectInput("model_genre", "Choose a Genre:", 
+                                choices = unique(dataset$track_genre)),
+                    selectInput("model_response", "Choose Response Variable:", 
+                                choices = c("popularity", "danceability", "energy", "valence", "liveness", "acousticness", "speechiness", "instrumentalness")),
+                    selectInput("model_predictor", "Choose Predictor Variable:", 
+                                choices = c("duration_ms", "loudness", "speechiness", "acousticness", "instrumentalness", "liveness", "tempo"))
+                  ),
+                  mainPanel(
+                    verbatimTextOutput("modelSummary")
+                  )
+                )
+              ))
+    )
+  )
+)
+
+# Server
+server <- function(input, output) { #we built up server block
+  
+  # Data Exploration
+  filteredData <- reactive({
+    dataset %>%
+      filter(
+        popularity >= input$popularity[1],
+        popularity <= input$popularity[2],
+        danceability >= input$danceability[1],
+        danceability <= input$danceability[2],
+        energy >= input$energy[1],
+        energy <= input$energy[2],
+        grepl(input$artist, artists, ignore.case = TRUE),
+        track_genre == input$genre
+      )
+  })
+  
+  output$table <- renderDT({
+    datatable(filteredData())
+  })
+  
+  # Visualization - Bar Plot
+  output$barPlot <- renderPlot({
+    data <- dataset %>% filter(track_genre == input$vis_genre)
+    summary_data <- data %>%
+      summarize(
+        danceability = mean(danceability),
+        energy = mean(energy),
+        valence = mean(valence),
+        liveness = mean(liveness),
+        acousticness = mean(acousticness),
+        speechiness = mean(speechiness),
+        instrumentalness = mean(instrumentalness)
+      ) %>%
+      pivot_longer(cols = everything(), names_to = "metric", values_to = "value")
+    
+    ggplot(summary_data, aes(x = metric, y = value, fill = metric)) +
+      geom_bar(stat = "identity") +
+      labs(x = "Metric", y = "Average Value", fill = "Metric", title = "Average Metrics by Genre") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  })
+  
+  # Modeling
+  output$modelSummary <- renderPrint({
+    data <- dataset %>% filter(track_genre == input$model_genre)
+    model <- lm(as.formula(paste(input$model_response, "~", input$model_predictor)), data = data)
+    summary(model)
+  })
+}
+
+shinyApp(ui, server)
+
+
+```
